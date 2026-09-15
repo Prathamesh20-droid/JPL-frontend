@@ -37,6 +37,19 @@ const markPlayerAsSold = async (id) => {
   }
 };
 
+const markPlayerAsUnsold = async (id) => {
+  try {
+    const res = await api.post(
+      "/mark-unsold",
+      { player_id: id },
+      { withCredentials: true }
+    );
+    alert(res.data.message);
+  } catch (err) {
+    alert(err.response?.data?.error || "Failed to mark UNSOLD");
+  }
+};
+
 const handlePause = async () => {
   try {
     await api.post("/pause-auction", {}, { withCredentials: true });
@@ -104,7 +117,7 @@ const adminAuctionReducer = (state, action) => {
         player: action.player,
         history: [],
         currentBid: action.currentBid,
-        timer: 0,
+        timer: action.timer ?? state.timer,
         paused: false,
         active: true,
         loading: false
@@ -141,7 +154,7 @@ const adminAuctionReducer = (state, action) => {
     case "TIMER_SYNC":
       return {
         ...state,
-        timer: action.timer
+        timer: typeof action.timer === "function" ? action.timer(state.timer) : action.timer
       };
     default:
       return state;
@@ -165,10 +178,12 @@ const Admin_auction = () => {
   }
   const navigate = useNavigate();
 
-  // Keeps timer in sync with server events
-  useSyncedTimer(socket, (t) => {
+  // Keeps timer in sync with server events via stable callback
+  const handleTimerSync = useCallback((t) => {
     dispatch({ type: "TIMER_SYNC", timer: t });
-  });
+  }, []);
+
+  useSyncedTimer(socket, handleTimerSync);
 
   // Authentication + socket listeners
   useEffect(() => {
@@ -192,7 +207,8 @@ const Admin_auction = () => {
       dispatch({
         type: "STATUS",
         player: data.player,
-        currentBid: current
+        currentBid: current,
+        timer: data.remaining_seconds
       });
     };
 
@@ -201,7 +217,7 @@ const Admin_auction = () => {
       dispatch({
         type: "STARTED",
         player: data.player,
-        currentBid: data.current_bid || data.player.base_price,
+        currentBid: data.current_bid || data.player?.base_price || 0,
         timer: data.duration
       });
     };
@@ -274,7 +290,6 @@ const Admin_auction = () => {
       socket.off("auction_status", handleAuctionStatus);
       socket.off("auction_started", handleAuctionStarted);
       socket.off("auction_update", handleAuctionUpdate);
-      socket.off("timer_update");
       socket.off("auction_paused", handleAuctionPaused);
       socket.off("auction_resumed", handleAuctionResumed);
       socket.off("auction_ended", handleAuctionEnded);
@@ -442,6 +457,13 @@ const Admin_auction = () => {
                         onClick={() => markPlayerAsSold(player.id)}
                       >
                         Sold
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary m-2"
+                        onClick={() => markPlayerAsUnsold(player.id)}
+                      >
+                        Unsold
                       </button>
                       <button
                         type="button"

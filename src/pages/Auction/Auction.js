@@ -255,7 +255,8 @@ const Auction = () => {
     socket.emit("place_bid", {
       team_id: user.team_id,
       player_id: auction.player?.id,
-      bid_amount: amount
+      bid_amount: amount,
+      token: localStorage.getItem("token")
     });
   };
 

@@ -233,9 +233,7 @@ const AdminRegister = () => {
     const data = new FormData();
     Object.keys(formData).forEach((key) => {
       if (key === "teams") {
-        if (formData.teams.length === 0) {
-          data.append("teams", "");
-        } else {
+        if (formData.teams.length > 0) {
           formData.teams.forEach((teamId) =>
             data.append("teams", Number(teamId))
           );
@@ -269,7 +267,11 @@ const AdminRegister = () => {
       }
     } catch (err) {
       console.error(err.response?.data);
-      alert(err.response?.data?.detail || err.response?.data?.error || "Something Went Wrong");
+      let errMsg = err.response?.data?.detail || err.response?.data?.error || "Something Went Wrong";
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg.map(e => `${e.loc?.join(".")}: ${e.msg}`).join("\n");
+      }
+      alert(errMsg);
     }
   };
 

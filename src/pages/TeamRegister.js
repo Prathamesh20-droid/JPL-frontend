@@ -349,13 +349,32 @@ const TeamRegister = () => {
                       {isEdit ? "💾 Update Team Details" : "Submit form"}
                     </button>
                     {isEdit && (
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-c fw-bold px-4"
-                        onClick={() => navigate(`/team_info/${editTeamId}`)}
-                      >
-                        Cancel
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-c fw-bold px-4"
+                          onClick={async () => {
+                            if (window.confirm("Are you sure you want to delete this team? This action cannot be undone and will permanently remove their logo, login account, and auction records.")) {
+                              try {
+                                await api.delete(`/team/${editTeamId}`);
+                                alert("Team deleted successfully");
+                                navigate("/teams");
+                              } catch (err) {
+                                alert("Failed to delete team: " + (err.response?.data?.detail || err.message));
+                              }
+                            }
+                          }}
+                        >
+                          🗑️ Delete Team
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-c fw-bold px-4"
+                          onClick={() => navigate(`/team_info/${editTeamId}`)}
+                        >
+                          Cancel
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
